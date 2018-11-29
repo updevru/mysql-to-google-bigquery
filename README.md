@@ -89,6 +89,20 @@ If you want to delete (and create) the table on BigQuery for a full dump:
 vendor/bin/console sync table-name --delete-table
 ```
 
+## Usage with Docker
+
+For build image run:
+
+```bash
+docker build -t myquery .
+```
+
+Run:
+
+```bash
+docker run -it --rm -e BQ_PROJECT_ID=memed-project -v -v "$PWD/key.json":/etc/key.json -e BQ_KEY_FILE=/etc/key.json -e BQ_DATASET=medicine -e DB_DATABASE_NAME=medicine -e DB_USERNAME=mysql_user -e DB_PASSWORD=secret -e DB_HOST=mysql-server myquery php /var/www/bin/console sync table-name --create-table
+```
+
 ## Credits
 
 :heart: Memed SA ([memed.com.br](https://memed.com.br))

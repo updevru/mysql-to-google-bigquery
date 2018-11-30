@@ -13,7 +13,7 @@ class BigQuery
      * Create a BigQuery Table based on MySQL Table columns
      * @param  string $tableName           Table Name
      * @param  array  $mysqlTableColumns   Array of Doctrine\DBAL\Schema\Column
-     * @return Google\Cloud\BigQuery\Table Table object
+     * @return \Google\Cloud\BigQuery\Table Table object
      */
     public function createTable($tableName, $mysqlTableColumns)
     {
@@ -126,9 +126,10 @@ class BigQuery
     {
         $client = $this->getClient();
 
-        $result = $client->runQuery(
+        $query = $client->query(
             'SELECT MAX([' . $columnName . ']) AS columnMax FROM [' . $_ENV['BQ_DATASET'] . '.' .  $tableName . ']'
         );
+        $result = $client->runQuery($query);
 
         $isComplete = $result->isComplete();
         while (!$isComplete) {
@@ -160,11 +161,13 @@ class BigQuery
             $columnValue = '"' . $columnValue . '"';
         }
 
-        $result = $client->runQuery(
+        $query = $client->query(
             'DELETE FROM `' . $_ENV['BQ_DATASET'] . '.' .  $tableName . '`' .
             ' WHERE `' . $columnName .'` = ' . $columnValue,
             ['useLegacySql' => false]
         );
+
+        $result = $client->runQuery($query);
 
         $isComplete = $result->isComplete();
         while (!$isComplete) {
@@ -178,7 +181,9 @@ class BigQuery
 
     /**
      * Get BigQuery API Client
+     *
      * @return BigQueryClient BigQuery API Client
+     * @throws \Exception
      */
     public function getClient()
     {
@@ -213,9 +218,11 @@ class BigQuery
     public function getTablesMetadata()
     {
         $client = $this->getClient();
-        $queryResults = $client->runQuery('SELECT * FROM ' . $_ENV['BQ_DATASET'] . '.__TABLES__;', [
+        $query = $client->query('SELECT * FROM ' . $_ENV['BQ_DATASET'] . '.__TABLES__;', [
             'useQueryCache' => false
         ]);
+
+        $queryResults = $client->runQuery($query);
 
         foreach ($queryResults->rows() as $row) {
             $this->tablesMetadata[$row['table_id']] = $row;
@@ -228,7 +235,7 @@ class BigQuery
      * Load data to BigQuery reading it from JSON NEWLINE DELIMITED File
      * @param  resource|string $file                Resource or String (path) of JSON file
      * @param  string          $tableName           Table Name
-     * @return Google\Cloud\BigQuery\Job            BigQuery Data Load Job
+     * @return \Google\Cloud\BigQuery\Job            BigQuery Data Load Job
      */
     public function loadFromJson($file, $tableName)
     {
@@ -236,14 +243,11 @@ class BigQuery
         $dataset = $client->dataset($_ENV['BQ_DATASET']);
         $table = $dataset->table($tableName);
 
-        $job = $table->load(
-            $file,
-            [
-                'jobConfig' => [
-                    'sourceFormat' => 'NEWLINE_DELIMITED_JSON'
-                ]
-            ]
-        );
+        $loadJobConfig = $table->load(
+            $file
+        )->sourceFormat('NEWLINE_DELIMITED_JSON');
+
+        $job = $table->runJob($loadJobConfig);
 
         return $job;
     }

@@ -141,8 +141,8 @@ class SyncService
             $progress->advance();
         }
 
-        $output->writeln('<fg=green>Synced!</>');
         $progress->finish();
+        $output->writeln('<fg=green>Synced!</>');
     }
 
     /**
@@ -246,7 +246,10 @@ class SyncService
 
     /**
      * Wait for a BigQuery Job
-     * @param  Google\Cloud\BigQuery\Job $job BigQuery Job
+     *
+     * @param  \Google\Cloud\BigQuery\Job $job BigQuery Job
+     *
+     * @throws \Exception
      */
     protected function waitJob($job)
     {
